@@ -13,6 +13,9 @@
     body { font-family: 'Poppins', sans-serif; background: #f5f7fa; color: #333; line-height: 1.6; }
     header { background: #27ae60; color: #fff; text-align: center; padding: 1em; position: relative; }
     .menu-toggle { display: none; font-size: 1.5em; background: none; border: none; color: #fff; cursor: pointer; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); }
+    .cart-icon { position: fixed; bottom: 20px; right: 20px; background: #27ae60; color: #fff; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5em; box-shadow: 0 5px 15px rgba(0,0,0,0.2); cursor: pointer; z-index: 1000; position: relative; transition: transform 0.3s ease; }
+    .cart-icon:hover { background: #219653; transform: scale(1.1); }
+    .cart-count { position: absolute; top: -5px; right: -5px; background: #fff; color: #27ae60; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 0.9em; font-weight: 600; }
     .sidebar { position: fixed; left: -250px; top: 0; height: 100%; width: 250px; background: #2c3e50; padding-top: 20px; transition: left 0.3s; z-index: 1000; }
     .sidebar.active { left: 0; }
     .sidebar ul { list-style: none; }
@@ -36,17 +39,15 @@
     .product-card strong { color: #e67e22; font-size: 1em; }
     .add-to-cart { background: #27ae60; color: #fff; border: none; padding: 0.5em 1em; border-radius: 4px; cursor: pointer; font-size: 0.9em; transition: background 0.3s; }
     .add-to-cart:hover { background: #219653; }
-    #cart { position: fixed; bottom: 10px; right: 10px; background: #fff; padding: 1em; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); max-width: 250px; display: none; font-size: 0.9em; }
-    #cart h3 { color: #2c3e50; margin-bottom: 0.5em; font-size: 1.1em; }
-    #cart ul { list-style: none; margin-bottom: 0.5em; }
-    #cart ul li { margin: 0.3em 0; display: flex; justify-content: space-between; align-items: center; font-size: 0.9em; }
-    #cart ul li button { background: #e74c3c; color: #fff; border: none; padding: 0.2em 0.5em; border-radius: 3px; cursor: pointer; font-size: 0.8em; transition: background 0.3s; }
-    #cart ul li button:hover { background: #c0392b; }
-    #cart p { font-weight: 600; color: #2c3e50; margin-bottom: 0.5em; font-size: 0.9em; }
-    #cart button { background: #27ae60; color: #fff; border: none; padding: 0.5em; border-radius: 4px; cursor: pointer; font-size: 0.9em; transition: background 0.3s; margin-right: 0.5em; }
-    #cart button:hover { background: #219653; }
-    #cart .whatsapp-btn { background: #25d366; }
-    #cart .whatsapp-btn:hover { background: #1da851; }
+    #cart-modal { display: none; position: fixed; bottom: 90px; right: 20px; background: #fff; padding: 1em; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); max-width: 250px; width: 100%; max-height: 400px; overflow-y: auto; transition: opacity 0.3s ease; opacity: 0; z-index: 1001; }
+    #cart-modal.active { display: block; opacity: 1; }
+    #cart-items { margin-bottom: 0.5em; }
+    .cart-item { display: flex; justify-content: space-between; align-items: center; margin: 0.3em 0; color: #2c3e50; }
+    .remove-from-cart { background: #e74c3c; color: #fff; border: none; padding: 0.2em 0.5em; border-radius: 3px; cursor: pointer; font-size: 0.8em; transition: background 0.3s; }
+    .remove-from-cart:hover { background: #c0392b; }
+    #payment-method { width: 100%; padding: 0.5em; margin-bottom: 0.5em; border-radius: 3px; border: 1px solid #ccc; }
+    #checkout-btn { background: #27ae60; color: #fff; border: none; padding: 0.5em; border-radius: 4px; width: 100%; cursor: pointer; font-size: 0.9em; transition: background 0.3s; }
+    #checkout-btn:hover { background: #219653; }
     footer { background: #27ae60; color: #fff; text-align: center; padding: 0.5em; margin-top: 1em; font-size: 0.9em; }
     @media (max-width: 768px) {
       .menu-toggle { display: block; }
@@ -54,7 +55,9 @@
       .sidebar.active { left: 0; }
       .main-content.shifted { margin-left: 0; }
       .products-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
-      #cart { max-width: 200px; }
+      #cart-modal { max-width: 200px; bottom: 70px; right: 10px; }
+      .cart-icon { bottom: 10px; right: 10px; width: 50px; height: 50px; font-size: 1.2em; }
+      .cart-count { top: -3px; right: -3px; width: 16px; height: 16px; font-size: 0.8em; }
     }
     @media (min-width: 769px) {
       .main-content { margin-left: 60px; }
@@ -182,11 +185,18 @@
       <p>Email: <a href="mailto:origemdetudolsa@gmail.com">origemdetudolsa@gmail.com</a></p>
     </div>
 
-    <div id="cart">
-      <h3>Carrinho</h3>
-      <ul id="cart-items" aria-live="polite"></ul>
-      <p>Total: R$ <span id="cart-total">0.00</span></p>
-      <button class="whatsapp-btn" onclick="sendToWhatsApp()">Enviar para WhatsApp</button>
+    <div id="cart-icon">
+      🛒
+      <span id="cart-count">0</span>
+    </div>
+    <div id="cart-modal">
+      <div id="cart-items"></div>
+      <select id="payment-method">
+        <option value="dinheiro">Dinheiro</option>
+        <option value="cartao">Cartão</option>
+        <option value="pix">Pix</option>
+      </select>
+      <button id="checkout-btn" onclick="sendToWhatsApp()">Finalizar Pedido</button>
     </div>
   </div>
 
@@ -195,7 +205,7 @@
   </footer>
 
   <script>
-    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+    let cart = [];
 
     function showSection(sectionId) {
       const sections = document.querySelectorAll('.section');
@@ -211,51 +221,65 @@
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
       if (window.innerWidth <= 768) {
-        toggleMenu(); // Fecha o menu ao selecionar uma seção em mobile
+        toggleMenu();
       }
     }
 
-    function addToCart(product, price) {
-      if (!product || price <= 0) return alert('Produto inválido!');
-      cart.push({ product, price });
-      localStorage.setItem('cart', JSON.stringify(cart));
-      updateCart();
-      document.getElementById('cart').style.display = 'block';
+    function addToCart(productName, price) {
+      cart.push({ name: productName, price: price });
+      alert(`${productName} adicionado ao carrinho!`);
+      updateCartCount();
+      updateCartDisplay();
     }
 
     function removeFromCart(index) {
       cart.splice(index, 1);
-      localStorage.setItem('cart', JSON.stringify(cart));
-      updateCart();
-      if (cart.length === 0) {
-        document.getElementById('cart').style.display = 'none';
-      }
+      updateCartCount();
+      updateCartDisplay();
     }
 
-    function updateCart() {
+    function toggleCart() {
+      const modal = document.getElementById('cart-modal');
+      modal.classList.toggle('active');
+      updateCartDisplay();
+    }
+
+    function updateCartCount() {
+      const cartCount = document.getElementById('cart-count');
+      cartCount.textContent = cart.length;
+    }
+
+    function updateCartDisplay() {
       const cartItems = document.getElementById('cart-items');
-      cartItems.innerHTML = cart.length ? '' : '<li>Carrinho vazio</li>';
-      let total = 0;
+      cartItems.innerHTML = '';
+      if (cart.length === 0) {
+        cartItems.innerHTML = '<p>Carrinho vazio.</p>';
+        return;
+      }
       cart.forEach((item, index) => {
-        if (cart.length > 0) {
-          const li = document.createElement('li');
-          li.innerHTML = `${item.product} - R$ ${item.price.toFixed(2)} <button onclick="removeFromCart(${index})">Remover</button>`;
-          cartItems.appendChild(li);
-          total += item.price;
-        }
+        const div = document.createElement('div');
+        div.className = 'cart-item';
+        div.innerHTML = `
+          <span>${item.name} - R$ ${item.price.toFixed(2)}</span>
+          <button class="remove-from-cart" onclick="removeFromCart(${index})">Remover</button>
+        `;
+        cartItems.appendChild(div);
       });
-      document.getElementById('cart-total').textContent = total.toFixed(2);
     }
 
     function sendToWhatsApp() {
-      if (cart.length === 0) return alert('Carrinho vazio!');
-      let message = "Olá! Aqui está meu pedido do LSA Pet Shopping:\n\n";
-      cart.forEach(item => {
-        message += `${item.product} - R$ ${item.price.toFixed(2)}\n`;
-      });
-      message += `\nTotal: R$ ${document.getElementById('cart-total').textContent}\nPor favor, confirme!`;
+      if (cart.length === 0) {
+        alert('Seu carrinho está vazio! Adicione produtos antes de finalizar.');
+        return;
+      }
+      const paymentMethod = document.getElementById('payment-method').value;
+      let total = cart.reduce((sum, item) => sum + item.price, 0);
+      let message = `Olá! Quero fazer um pedido:\n\nItens no carrinho:\n${cart.map(item => `${item.name} - R$ ${item.price.toFixed(2)}`).join('\n')}\n\nTotal: R$ ${total.toFixed(2)}\nForma de pagamento: ${paymentMethod}\nPor favor, confirme!`;
       const whatsappUrl = `https://wa.me/5561981105022?text=${encodeURIComponent(message).replace(/%20/g, '+')}`;
       window.open(whatsappUrl, '_blank');
+      cart = [];
+      updateCartCount();
+      document.getElementById('cart-modal').classList.remove('active');
     }
 
     function toggleMenu() {
@@ -265,15 +289,21 @@
       mainContent.classList.toggle('shifted');
     }
 
-    document.querySelectorAll('.sidebar a').forEach(anchor => {
-      anchor.addEventListener('click', function(e) {
-        e.preventDefault();
-      });
+    // Fechar carrinho ao clicar fora
+    document.addEventListener('click', function(event) {
+      const modal = document.getElementById('cart-modal');
+      const cartIcon = document.getElementById('cart-icon');
+      if (modal.classList.contains('active') && !cartIcon.contains(event.target) && !modal.contains(event.target)) {
+        modal.classList.remove('active');
+      }
     });
+
+    // Ativa o carrinho ao clicar no ícone
+    document.getElementById('cart-icon').addEventListener('click', toggleCart);
 
     // Carrega todas as seções ao iniciar
     showSection('all');
-    updateCart();
+    updateCartCount();
   </script>
 </body>
 </html>
